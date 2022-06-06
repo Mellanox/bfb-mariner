@@ -33,7 +33,7 @@ LANG=C
 BF_HOSTNAME="localhost"
 SDIR="/root/workspace"
 BFB="${BFB:-/lib/firmware/mellanox/boot/default.bfb}"
-CAPSULE="${SDIR}/update.cap"
+CAPSULE="${CAPSULE:-/lib/firmware/mellanox/boot/capsule/boot_update2.cap}"
 verbose=0
 kdir=$(/bin/ls -1d /lib/modules/4.19* /lib/modules/4.20* /lib/modules/5.* 2> /dev/null | head -1)
 if [ -n "$kdir" ]; then
@@ -148,6 +148,9 @@ cp /boot/initramfs-${kernel}.img $initramfs
 mkdir -p /boot/efi/EFI/mariner/
 cp /usr/share/grub2-efi/grubaa64.efi /boot/efi/EFI/mariner/grubaa64.efi
 cp /usr/share/shim-unsigned-aarch64/shimaa64.efi /boot/efi/EFI/mariner/shimaa64.efi
+mkdir -p /boot/efi/boot/grub2
+cp /usr/share/grub2-efi/grubaa64.efi /boot/efi/boot/grub2/grubaa64.efi
+cp /usr/share/shim-unsigned-aarch64/shimaa64.efi /boot/efi/boot/grub2/shimaa64.efi
 
 cat > /etc/default/grub << EOF
 GRUB_TIMEOUT=0
@@ -162,10 +165,6 @@ GRUB_TIMEOUT_STYLE=countdown
 GRUB_DISABLE_OS_PROBER=false
 EOF
 
-# initramfs=/boot/initramfs-$kernel.img
-# initramfs=$(realpath $initramfs)
-# cp $initramfs $WDIR/dump-initramfs-v0
-# initramfs=$WDIR/dump-initramfs-v0
 
 case "$(file --brief --mime-type "$initramfs")" in
 	"application/x-lzma")
@@ -200,7 +199,7 @@ copy_bin()
 	sudo cp -a $bin .${bin}
 
 	# Copy dependencies
-	for lib in `ldd $bin 2> /dev/null | grep '=>' | awk '{print $3}'`
+	for lib in `ldd $bin 2> /dev/null | grep '=>' | awk '{print $3}' | grep -v '(0x0'`
 	do
 		if [ -e .$lib ]; then
 			continue
@@ -237,7 +236,7 @@ copy_rpm()
 			done
 			;;
 		*mft*)
-			for f in `rpm -ql $package`
+			for f in `rpm -ql $package | grep -v man`
 			do
 				if [ -d $f ]; then
 					continue
@@ -246,7 +245,7 @@ copy_rpm()
 			done
 			;;
 		*)
-			for f in `rpm -ql $package | grep -v share`
+			for f in `rpm -ql $package | grep -vE 'share|build-id'`
 			do
 				if [ -d $f ]; then
 					continue
@@ -258,7 +257,7 @@ copy_rpm()
 }
 
 # Copy the content of RPM packages
-for package in  mlxbf-bfscripts util-linux dosfstools e2fsprogs kmod glibc coreutils pciutils usbutils chkconfig mft mft-oem kernel-mft tar
+for package in  mlxbf-bfscripts util-linux dosfstools e2fsprogs kmod glibc coreutils pciutils usbutils chkconfig mft mft-oem kernel-mft tar which
 do
 	copy_rpm $package
 done

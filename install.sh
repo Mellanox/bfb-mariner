@@ -63,7 +63,11 @@ if [ -e "${boot_fifo_path}" ]; then
 fi
 
 if [ -e /etc/bf.cfg ]; then
-	. /etc/bf.cfg
+	if ( bash -n /etc/bf.cfg ); then
+		. /etc/bf.cfg
+	else
+		log "INFO: Invalid bf.cfg"
+	fi
 fi
 
 if [ "X${DEBUG}" == "Xyes" ]; then
@@ -195,6 +199,7 @@ EOF
 
 echo "PasswordAuthentication yes" >> /mnt/etc/ssh/sshd_config
 echo "PermitRootLogin yes" >> /mnt/etc/ssh/sshd_config
+sed -i '0,/PermitRootLogin/{/PermitRootLogin/d;}' /mnt/etc/ssh/sshd_config
 
 chroot /mnt /bin/systemctl enable serial-getty@ttyAMA0.service
 chroot /mnt /bin/systemctl enable serial-getty@ttyAMA1.service
@@ -212,10 +217,7 @@ p1m0_uuid=`$UUIDGEN`
 p0m0_mac=`echo ${p0m0_uuid} | sed -e 's/-//;s/^\(..\)\(..\)\(..\)\(..\)\(..\).*$/02:\1:\2:\3:\4:\5/'`
 p1m0_mac=`echo ${p1m0_uuid} | sed -e 's/-//;s/^\(..\)\(..\)\(..\)\(..\)\(..\).*$/02:\1:\2:\3:\4:\5/'`
 
-pciids=`/usr/sbin/lspci -nD -d 15b3:a2d2 2> /dev/null | awk '{print $1}'`
-if [ ! -n "$pciids" ]; then
-	pciids=`/usr/sbin/lspci -nD -d 15b3:a2d6 2> /dev/null | awk '{print $1}'`
-fi
+pciids=`lspci -nD 2> /dev/null | grep 15b3:a2d[26c] | awk '{print $1}'`
 
 mkdir -p /mnt/etc/mellanox
 echo > /mnt/etc/mellanox/mlnx-sf.conf
@@ -232,7 +234,7 @@ EOF
 done
 
 # Update HW-dependant files
-if (/usr/sbin/lspci -n -d 15b3: | grep -wq 'a2d2'); then
+if (lspci -n -d 15b3: | grep -wq 'a2d2'); then
 	# BlueField-1
 	if [ ! -n "$DHCP_CLASS_ID" ]; then
 		DHCP_CLASS_ID="BF1Client"
@@ -240,12 +242,22 @@ if (/usr/sbin/lspci -n -d 15b3: | grep -wq 'a2d2'); then
 	ln -snf snap_rpc_init_bf1.conf /mnt/etc/mlnx_snap/snap_rpc_init.conf
 	# OOB interface does not exist on BlueField-1
 	/bin/rm -f /mnt/etc/sysconfig/network-scripts/ifcfg-oob_net0
-elif (/usr/sbin/lspci -n -d 15b3: | grep -wq 'a2d6'); then
+elif (lspci -n -d 15b3: | grep -wq 'a2d6'); then
 	# BlueField-2
 	if [ ! -n "$DHCP_CLASS_ID" ]; then
 		DHCP_CLASS_ID="BF2Client"
 	fi
 	ln -snf snap_rpc_init_bf2.conf /mnt/etc/mlnx_snap/snap_rpc_init.conf
+elif (lspci -n -d 15b3: | grep -wq 'a2dc'); then
+	# BlueField-3
+	if [ ! -n "$DHCP_CLASS_ID" ]; then
+		DHCP_CLASS_ID="BF3Client"
+	fi
+	if [ -e /mnt/etc/mlnx_snap/snap_rpc_init_bf3.conf ]; then
+		ln -snf snap_rpc_init_bf3.conf /mnt/etc/mlnx_snap/snap_rpc_init.conf
+	else
+		ln -snf snap_rpc_init_bf2.conf /mnt/etc/mlnx_snap/snap_rpc_init.conf
+	fi
 fi
 
 	mkdir -p /mnt/etc/dhcp
@@ -322,13 +334,19 @@ fsck.vfat -a ${device}p1
 fsck.ext4 -p -y ${device}p2
 sync
 
+bfrec --bootctl --policy dual 2> /dev/null || true
+if [ -e /lib/firmware/mellanox/boot/capsule/boot_update2.cap ]; then
+	bfrec --capsule /lib/firmware/mellanox/boot/capsule/boot_update2.cap --policy dual
+fi
+
 # Clean up actual boot entries.
 bfbootmgr --cleanall > /dev/null 2>&1
+/bin/rm -f /sys/firmware/efi/efivars/Boot* > /dev/null 2>&1
 
 BFCFG=`which bfcfg 2> /dev/null`
 
 mount -t efivarfs none /sys/firmware/efi/efivars
-efibootmgr -c -d /dev/mmcblk0 -p 1 -l "\EFI\mariner\grubaa64.efi" -L $distro
+efibootmgr -c -d /dev/mmcblk0 -p 1 -l "\boot\grub2\grubaa64.efi" -L $distro
 umount /sys/firmware/efi/efivars
 
 BFCFG=`which bfcfg 2> /dev/null`
