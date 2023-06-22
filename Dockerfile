@@ -11,8 +11,8 @@ ADD rebuild_drivers /tmp
 ENV RUN_FW_UPDATER=no
 
 RUN yum install -y dnf-utils sed libtool
-RUN yum-config-manager --nogpgcheck --add-repo https://linux.mellanox.com/public/repo/doca/1.3.0/mariner2.0/aarch64/
-RUN sed -i -e "s/linux.mellanox.com_public_repo_doca_1.3.0_mariner2.0_aarch64_/doca/" /etc/yum.repos.d/linux.mellanox.com_public_repo_doca_1.3.0_mariner2.0_aarch64_.repo
+RUN yum-config-manager --nogpgcheck --add-repo https://linux.mellanox.com/public/repo/doca/2.0.2/mariner2.0/aarch64/
+RUN sed -i -e "s/linux.mellanox.com_public_repo_doca_2.0.2_mariner2.0_aarch64_/doca/" /etc/yum.repos.d/linux.mellanox.com_public_repo_doca_2.0.2_mariner2.0_aarch64_.repo
 RUN yum-config-manager --save --setopt=doca.sslverify=0 doca
 RUN yum-config-manager --save --setopt=doca.gpgcheck=0 doca
 RUN yum-config-manager --dump doca
@@ -34,8 +34,8 @@ RUN yum install -y ibacm ibutils2 infiniband-diags infiniband-diags-compat libib
 # RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlnx-ofa_kernel-source)
 # RUN rpm -iv --nodeps mlnx-ofa_kernel*rpm
 
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location libreswan)
-RUN rpm -Uv --nodeps *libreswan*rpm
+# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location libreswan)
+# RUN rpm -Uv --nodeps *libreswan*rpm
 RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location openvswitch)
 RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location openvswitch-devel)
 RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location python3-openvswitch)
