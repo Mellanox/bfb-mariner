@@ -141,7 +141,7 @@ ex rm -rf initramfs
 
 initramfs=$WDIR/dump-initramfs-v0
 if [ ! -e /boot/initramfs-${kernel}.img ]; then
-	ex dracut --kver ${kernel} --force --omit-drivers 'mlx4_core mlx4_en' /boot/initramfs-${kernel}.img ${kernel}
+	ex dracut --kver ${kernel} --force --omit-drivers 'mlx4_core mlx4_en' --add-drivers "sdhci-of-dwcmshc dw_mmc-bluefield dw_mmc dw_mmc-pltfm mmc_block mlxbf_tmfifo virtio_console mlx5_core mlx5_ib mlxfw ib_umad nvme" /boot/initramfs-${kernel}.img ${kernel}
 fi
 cp /boot/initramfs-${kernel}.img $initramfs
 
@@ -274,7 +274,7 @@ do
 done
 
 sudo depmod -a -b ./ $kernel
-sudo ldconfig -r ./ || true
+sudo ldconfig -r ./
 sudo mkdir -p usr/share/misc/ bin/
 sudo cp /usr/share/misc/pci.ids.gz usr/share/misc/
 # Make sure we can load mlx-bootctl
@@ -305,12 +305,14 @@ cat > etc/init.d/install-mariner << EOF
 #!/bin/bash
 
 insmod /mlx-bootctl.ko > /dev/null 2>&1
+modprobe -a sdhci-of-dwcmshc mlxbf_tmfifo dw_mmc_bluefield mmc_block virtio_console nvme 2>&1 | tee /dev/kmsg
+
 echo
 echo "=================================" | tee /dev/kmsg
 echo "Installing Mariner. Please wait..." | tee /dev/kmsg
 echo "=================================" | tee /dev/kmsg
 
-modprobe -a mlx5_ib ib_uverbs 2>&1 | tee /dev/kmsg
+modprobe -a mlx5_ib ib_umad 2>&1 | tee /dev/kmsg
 sleep 5
 
 /bin/sh /mariner/install.sh

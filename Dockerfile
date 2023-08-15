@@ -10,8 +10,8 @@ ADD rebuild_drivers /tmp
 ENV RUN_FW_UPDATER=no
 
 RUN yum install -y dnf-utils sed libtool
-RUN yum-config-manager --nogpgcheck --add-repo https://linux.mellanox.com/public/repo/doca/2.0.2/mariner2.0/aarch64/
-RUN sed -i -e "s/linux.mellanox.com_public_repo_doca_2.0.2_mariner2.0_aarch64_/doca/" /etc/yum.repos.d/linux.mellanox.com_public_repo_doca_2.0.2_mariner2.0_aarch64_.repo
+RUN yum-config-manager --nogpgcheck --add-repo https://linux.mellanox.com/public/repo/doca/2.2.0/mariner2.0/aarch64/
+RUN sed -i -e "s/linux.mellanox.com_public_repo_doca_2.2.0_mariner2.0_aarch64_/doca/" /etc/yum.repos.d/linux.mellanox.com_public_repo_doca_2.2.0_mariner2.0_aarch64_.repo
 RUN yum-config-manager --save --setopt=doca.sslverify=0 doca
 RUN yum-config-manager --save --setopt=doca.gpgcheck=0 doca
 RUN yum-config-manager --dump doca
@@ -25,28 +25,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.9 10
 RUN /tmp/rebuild_drivers $(/bin/ls -1 /lib/modules/ | head -1)
 RUN /usr/sbin/depmod -a $(/bin/ls -1 /lib/modules/ | head -1) || true
 
-RUN yum install -y ibacm ibutils2 infiniband-diags infiniband-diags-compat libibumad libibverbs libibverbs-utils librdmacm librdmacm-utils libxpmem libxpmem-devel mft mft-oem mlnx-ethtool mlnx-fw-updater mlnx-iproute2 mlnx-libsnap mlx-regex mlxbf-bootctl mlxbf-bootimages mstflint ofed-scripts opensm opensm-devel opensm-libs opensm-static perftest rdma-core rdma-core-devel srp_daemon ucx ucx-cma ucx-devel ucx-ib ucx-knem ucx-rdmacm xpmem mlnx-tools mlnx-dpdk mlnx-dpdk-devel dpcp libvma libvma-utils python3-grpcio python3-protobuf rxp-compiler
-
-# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlnx-ofa_kernel)
-# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlnx-ofa_kernel-devel)
-# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlnx-ofa_kernel-modules)
-# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlnx-ofa_kernel-source)
-# RUN rpm -iv --nodeps mlnx-ofa_kernel*rpm
-
-# RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location libreswan)
-# RUN rpm -Uv --nodeps *libreswan*rpm
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location openvswitch)
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location openvswitch-devel)
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location python3-openvswitch)
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location openvswitch-ipsec)
-RUN rpm -Uv --nodeps *openvswitch*rpm
-
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location mlxbf-bfscripts)
-RUN rpm -iv --nodeps mlxbf-bfscripts*rpm
-
-RUN wget --no-check-certificate --no-verbose $(repoquery --nogpgcheck --location bf-release)
-RUN rpm -iv --nodeps bf-release*rpm
-
-RUN /bin/rm -f *rpm
+RUN yum install -y ibacm ibutils2 infiniband-diags infiniband-diags-compat libibumad libibverbs libibverbs-utils librdmacm librdmacm-utils libxpmem libxpmem-devel mft mft-oem mlnx-ethtool mlnx-fw-updater mlnx-iproute2 mlnx-libsnap mlx-regex mlxbf-bootctl mlxbf-bootimages mstflint ofed-scripts opensm opensm-devel opensm-libs opensm-static perftest rdma-core rdma-core-devel srp_daemon ucx ucx-cma ucx-devel ucx-ib ucx-knem ucx-rdmacm xpmem mlnx-tools mlnx-dpdk mlnx-dpdk-devel dpcp libvma libvma-utils python3-grpcio python3-protobuf rxp-compiler openvswitch openvswitch-devel python3-openvswitch openvswitch-ipsec mlxbf-bfscripts bf-release
 
 CMD  /root/workspace/create_bfb -k $(/bin/ls -1 /lib/modules/ | head -1)
